@@ -1,4 +1,4 @@
-name: Upload hello.txt to another repo
+name: Upload cookies.enc to ytdownloader_backend repo
 
 on:
   push:
@@ -12,6 +12,37 @@ jobs:
       - name: Checkout current repo
         uses: actions/checkout@v3
 
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install
+
+      - name: Install xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb    
+
+      - name: Decrypt cookies.enc
+        run: |
+          if [ -f cookies.enc ]; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -in cookies.enc -out cookies.txt -pass pass:"${{ secrets.COOKIE_KEY }}"
+            echo "cookies.enc decrypted to cookies.txt"
+          else
+            echo "cookies.enc not found!"
+            exit 1
+          fi
+
+      - name: Run spoof.py
+        run: python3 spoof.py
+
+      - name: Encrypt cookies.txt
+        run: |
+          if [ -f cookies.txt ]; then
+            openssl enc -aes-256-cbc -pbkdf2 -salt -in cookies.txt -out cookies.enc -pass pass:"${{ secrets.COOKIE_KEY }}"
+            echo "cookies.txt encrypted to cookies.enc"
+          else
+            echo "cookies.txt not found!"
+            exit 1
+          fi  
+
       - name: Configure Git user
         run: |
           git config --global user.email "actions@github.com"
@@ -24,15 +55,15 @@ jobs:
         run: |
           git clone https://x-access-token:${TOKEN}@github.com/${TARGET_REPO}.git target-repo
           
-      - name: Copy hello.txt to target repo
+      - name: Copy cookies.enc to target repo
         run: |
-          cp hello.txt target-repo/
+          cp cookies.enc target-repo/
           
       - name: Commit and push changes
         working-directory: target-repo
         env:
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
-          git add hello.txt
-          git commit -m "Update hello.txt from source repo" || echo "No changes to commit"
+          git add cookies.enc
+          git commit -m "Update cookies.enc from source repo" || echo "No changes to commit"
           git push origin main
