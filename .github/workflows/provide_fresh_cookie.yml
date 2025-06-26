@@ -1,0 +1,38 @@
+name: Upload hello.txt to another repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  upload-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v3
+
+      - name: Configure Git user
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: Clone target repo
+        env:
+          TARGET_REPO: frozenflow/ytdownloader_backend
+          TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          git clone https://x-access-token:${TOKEN}@github.com/${TARGET_REPO}.git target-repo
+          
+      - name: Copy hello.txt to target repo
+        run: |
+          cp hello.txt target-repo/
+          
+      - name: Commit and push changes
+        working-directory: target-repo
+        env:
+          TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          git add hello.txt
+          git commit -m "Update hello.txt from source repo" || echo "No changes to commit"
+          git push origin main
