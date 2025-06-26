@@ -31,7 +31,7 @@ jobs:
           fi
 
       - name: Run spoof.py
-        run: python3 spoof.py
+        run: xvfb-run python3 spoof.py
 
       - name: Encrypt cookies.txt
         run: |
