@@ -33,8 +33,8 @@ jobs:
         run: |
           openssl enc -d -aes-256-cbc -pbkdf2 -in ytdownloader_backend/cookies.enc -out ytdownloader_backend/cookies.txt -pass pass:"${{ secrets.COOKIE_KEY }}"
 
-      - name: Copy cookies.enc to root
-        run: cp ytdownloader_backend/cookies.enc .
+      - name: Copy cookies.txt to root
+        run: cp ytdownloader_backend/cookies.txt .
 
       - name: Run your python script with cookies.txt path
         run: xvfb-run python3 spoof.py
