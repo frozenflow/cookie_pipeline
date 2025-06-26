@@ -1,69 +1,45 @@
-name: Upload cookies.enc to ytdownloader_backend repo
+name: Update Cookies Workflow
 
 on:
+  schedule:
+    - cron: '0 6 * * *'  # example: every day at 6 AM UTC
   push:
     branches:
       - main
 
 jobs:
-  upload-file:
+  update-cookies:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout current repo
+      - name: Checkout this repo (optional)
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: |
-          pip install playwright
-          playwright install
-
-      - name: Install xvfb
-        run: sudo apt-get update && sudo apt-get install -y xvfb    
-
-      - name: Decrypt cookies.enc
-        run: |
-          if [ -f cookies.enc ]; then
-            openssl enc -d -aes-256-cbc -pbkdf2 -in cookies.enc -out cookies.txt -pass pass:"${{ secrets.COOKIE_KEY }}"
-            echo "cookies.enc decrypted to cookies.txt"
-          else
-            echo "cookies.enc not found!"
-            exit 1
-          fi
-
-      - name: Run spoof.py
-        run: xvfb-run python3 spoof.py
-
-      - name: Encrypt cookies.txt
-        run: |
-          if [ -f cookies.txt ]; then
-            openssl enc -aes-256-cbc -pbkdf2 -salt -in cookies.txt -out cookies.enc -pass pass:"${{ secrets.COOKIE_KEY }}"
-            echo "cookies.txt encrypted to cookies.enc"
-          else
-            echo "cookies.txt not found!"
-            exit 1
-          fi  
-
-      - name: Configure Git user
-        run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-
-      - name: Clone target repo
+      - name: Clone target repo with cookies.enc
         env:
+          TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           TARGET_REPO: frozenflow/ytdownloader_backend
-          TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
-          git clone https://x-access-token:${TOKEN}@github.com/${TARGET_REPO}.git target-repo
-          
-      - name: Copy cookies.enc to target repo
+          git clone https://x-access-token:${TOKEN}@github.com/${TARGET_REPO}.git cookie-repo
+          ls cookie-repo
+
+      - name: Decrypt cookies.enc from target repo
         run: |
-          cp cookies.enc target-repo/
-          
-      - name: Commit and push changes
-        working-directory: target-repo
+          openssl enc -d -aes-256-cbc -pbkdf2 -in cookie-repo/cookies.enc -out cookie-repo/cookies.txt -pass pass:"${{ secrets.COOKIE_KEY }}"
+
+      - name: Run your python script with cookies.txt path
+        run: xvfb-run python3 spoof.py cookie-repo/cookies.txt
+
+      - name: Encrypt cookies.txt back to cookies.enc
+        run: |
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in cookie-repo/cookies.txt -out cookie-repo/cookies.enc -pass pass:"${{ secrets.COOKIE_KEY }}"
+
+      - name: Commit and push updated cookies.enc
+        working-directory: cookie-repo
         env:
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
           git add cookies.enc
-          git commit -m "Update cookies.enc from source repo" || echo "No changes to commit"
+          git commit -m "Update cookies.enc via workflow" || echo "No changes"
           git push origin main
