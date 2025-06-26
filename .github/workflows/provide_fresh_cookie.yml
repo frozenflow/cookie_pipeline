@@ -27,22 +27,20 @@ jobs:
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           TARGET_REPO: frozenflow/ytdownloader_backend
         run: |
-          git clone https://x-access-token:${TOKEN}@github.com/${TARGET_REPO}.git cookie-repo
-          ls cookie-repo
+          git clone https://x-access-token:${TOKEN}@github.com/${TARGET_REPO}.git
 
       - name: Decrypt cookies.enc from target repo
         run: |
-          openssl enc -d -aes-256-cbc -pbkdf2 -in cookie-repo/cookies.enc -out cookie-repo/cookies.txt -pass pass:"${{ secrets.COOKIE_KEY }}"
+          openssl enc -d -aes-256-cbc -pbkdf2 -in cookies.enc -out cookies.txt -pass pass:"${{ secrets.COOKIE_KEY }}"
 
       - name: Run your python script with cookies.txt path
-        run: xvfb-run python3 spoof.py cookie-repo/cookies.txt
+        run: xvfb-run python3 spoof.py
 
       - name: Encrypt cookies.txt back to cookies.enc
         run: |
           openssl enc -aes-256-cbc -pbkdf2 -salt -in cookie-repo/cookies.txt -out cookie-repo/cookies.enc -pass pass:"${{ secrets.COOKIE_KEY }}"
 
       - name: Commit and push updated cookies.enc
-        working-directory: cookie-repo
         env:
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
