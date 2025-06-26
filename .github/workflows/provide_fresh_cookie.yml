@@ -14,6 +14,14 @@ jobs:
       - name: Checkout this repo (optional)
         uses: actions/checkout@v3
 
+      - name: Install Python dependencies
+        run: |
+         pip install playwright
+         playwright install
+
+      - name: Install xvfb (virtual display server)
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+        
       - name: Clone target repo with cookies.enc
         env:
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
